@@ -1,5 +1,4 @@
 from warnings import filterwarnings
-from protonets.utils.metric import calculate_loss_metric
 from torch.autograd import Variable
 
 import torch
@@ -72,8 +71,7 @@ class ProtoNet(nn.Module):
         # get the query embeddings
         z_query = z[(num_way * num_shot):]
 
-        # compute distance between query embeddings and class prototypes
-        return calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto)
+        return num_way, num_query, target_inds, z_query, z_proto
 
 
 # function to load the model structure

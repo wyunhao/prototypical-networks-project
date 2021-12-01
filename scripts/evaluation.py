@@ -1,4 +1,5 @@
 from os import path
+from protonets.utils.metric import calculate_loss_metric
 from tqdm import trange
 from math import fsum
 
@@ -35,7 +36,8 @@ def evaluate_test(model, opt, test_data, logger):
             test_data['num_shot'], test_data['num_query'])
 
         # classify images and get the loss and the acc of the curr episode
-        _, output = model.set_forward_loss(episode_dict)
+        num_way, num_query, target_inds, z_query, z_proto = model.set_forward_loss(episode_dict)
+        _, output = calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto)
 
         # acumulate the loss and the acc
         test_loss += output['loss']
