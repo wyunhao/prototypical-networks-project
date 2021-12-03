@@ -71,7 +71,7 @@ class ProtoNet(nn.Module):
         # get the query embeddings
         z_query = z[(num_way * num_shot):]
 
-        return num_way, num_query, target_inds, z_query, z_proto
+        return num_way, num_query, target_inds, z_query, z_proto, x_query
 
 
 # function to load the model structure

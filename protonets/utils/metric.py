@@ -19,5 +19,4 @@ def calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto):
     acc_val = torch.eq(y_hat, target_inds.squeeze()).float().mean()
 
     # return output: loss, acc and predicted value
-    return loss_val, {
-        'loss': loss_val.item(), 'acc': acc_val.item(), 'y_hat': y_hat}
+    return loss_val, {'loss': loss_val.item(), 'acc': acc_val.item(), 'y_hat': y_hat}
