@@ -78,7 +78,7 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
             x = x.detach() + config['step_size']*torch.sign(grad.detach())
 
         x = torch.min(torch.max(x, data_query - config['epsilon']), data_query + config['epsilon'])
-        x = torch.clamp(x, 0.0, 1.0)
+        x = torch.clamp(x, 0.0, 255.0)
 
     return x
 
