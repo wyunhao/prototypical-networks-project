@@ -37,13 +37,13 @@ def evaluate_test(model, opt, test_data, logger):
     logger.info('> Testing')
 
     config = {
-        'epsilon': 8.0/255.0,
-        'num_steps': 7,
-        'step_size': 2.0/255.0,
-        'targeted': True,
+        'epsilon': 16.0,
+        'num_steps': 20,
+        'step_size': 2.0,
+        'targeted': False,
         'random_init': True
     }
-
+    attack = True
     # do epoch_size classification tasks to test the model
     for _ in trange(test_data['epoch_size']):
         # get the episode_dict
@@ -54,14 +54,19 @@ def evaluate_test(model, opt, test_data, logger):
         # classify images and get the loss and the acc of the curr episode
         num_way, num_query, labels_query, _, z_proto, x_query = model.set_forward_loss(episode_dict)
         
-        # for all query data image, perform PGD to get the perturbation
-        x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
+        if attack:
+            # for all query data image, perform PGD to get the perturbation
+            x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
 
-        # and then feed into the encoder to get the mapping onto its feature space
-        z_query_attack = model.encoder.forward(x_query_attack)
+            # and then feed into the encoder to get the mapping onto its feature space
+            z_query_attack = model.encoder.forward(x_query_attack)
 
-        # caculate the loss of this perturbation
-        _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query_attack, z_proto)
+            # caculate the loss of this perturbation
+            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query_attack, z_proto)
+        else:
+            z_query = model.encoder.forward(x_query)
+            
+            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query, z_proto)
 
         # acumulate the loss and the acc
         test_loss += output['loss']
@@ -158,7 +163,8 @@ def main():
         model = load_model(model_name, (3, 84, 84), 64, 64, weights_path)
     elif model_name == 'vanilla':
         model = load_model(model_name, (3, 84, 84), 64, 64)
-
+    num_gpus = 4
+    model.encoder = torch.nn.DataParallel(model.encoder, device_ids=[i for i in range(0, num_gpus)])
     # create test_data dict
     test_data = config[dataset]['test']
 

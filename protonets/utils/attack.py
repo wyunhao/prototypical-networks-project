@@ -43,6 +43,7 @@ def _get_protonet_head(query, prototypes, n_way, n_query, n_shot):
 
 def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_query, n_way, n_query, n_shot):
     if config['targeted']:
+        #print(labels_query.shape)
         new_labels_query = torch.zeros_like(labels_query)
         for i in range(int(labels_query.size()[0])):
             for j in range(int(labels_query.size()[1])):
@@ -55,7 +56,7 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
 
     new_labels_query = new_labels_query.view(new_labels_query.size()[0]*new_labels_query.size()[1])
     x = data_query.detach()
-
+    #print(x.shape)
     if config['random_init']:
         x = x + torch.zeros_like(x).uniform_(-config['epsilon'], config['epsilon'])
 
@@ -69,9 +70,10 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
             logits = logits.view(logits.size()[0]*logits.size()[1],logits.size()[2])
 
             loss = F.cross_entropy(logits, new_labels_query, size_average=False)
+            #print(loss)
 
         grad = torch.autograd.grad(loss, [x])[0]
-
+        #print(grad[0][0][0])
         if config['targeted']:
             x = x.detach() - config['step_size']*torch.sign(grad.detach())
         else:
@@ -79,7 +81,8 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
 
         x = torch.min(torch.max(x, data_query - config['epsilon']), data_query + config['epsilon'])
         x = torch.clamp(x, 0.0, 255.0)
-
+        #print(x[0][0][10])
+    
     return x
 
 
