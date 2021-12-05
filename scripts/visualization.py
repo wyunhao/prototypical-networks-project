@@ -24,6 +24,7 @@ from torchvision.utils import make_grid, save_image
 dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 def visualization(x_query, x_query_attack, n):
+    
     images = torch.squeeze(x_query[:n])
     images_attack = torch.squeeze(x_query_attack[:n])
     
@@ -62,43 +63,10 @@ def evaluate_test(model, opt, test_data, logger):
         # classify images and get the loss and the acc of the curr episode
         num_way, num_query, labels_query, _, z_proto, x_query = model.set_forward_loss(episode_dict)
         
-        if attack:
-            # for all query data image, perform PGD to get the perturbation
-            x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
-            
-            visualization(x_query, x_query_attack, 4)
-            break
-            # and then feed into the encoder to get the mapping onto its feature space
-            z_query_attack = model.encoder.forward(x_query_attack)
-
-            # caculate the loss of this perturbation
-            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query_attack, z_proto)
-        else:
-            z_query = model.encoder.forward(x_query)
-            
-            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query, z_proto)
-
-        # acumulate the loss and the acc
-        test_loss += output['loss']
-        test_acc.append(output['acc'])
-
-    # average the loss
-    test_loss = test_loss / test_data['epoch_size']
-
-    # average the acc
-    test_acc_avg = sum(test_acc) / test_data['epoch_size']
-
-    # calculate the standard deviation
-    test_acc_dev = fsum([((x - test_acc_avg) ** 2) for x in test_acc])
-    test_acc_dev = (test_acc_dev / (test_data['epoch_size'] - 1)) ** 0.5
-
-    # calculate error considering 95% confidence interval
-    error = 1.96 * test_acc_dev / (test_data['epoch_size'] ** 0.5)
-
-    # output the test loss and the test acc
-    logger.info('Loss: %.4f / Acc: %.2f +/- %.2f%%' % (test_loss, test_acc_avg * 100, error * 100))
-
-    return test_acc_avg
+        x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
+        
+        visualization(x_query, x_query_attack, 4)
+        break
 
 
 def _generate_support_label(num_way, num_shot):
@@ -119,24 +87,9 @@ def evaluate_n_times(n, *args):
     test_acc = 0
     std_dev = 0
 
-    for i in range(n):
-        output = evaluate_test(*args)
+    
+    output = evaluate_test(*args)
 
-        test_acc_list.append(output)
-        test_acc += output
-
-    # standard deviation
-    test_acc = test_acc / n
-
-    # standard deviation
-    std_dev = fsum([((x - test_acc) ** 2) for x in test_acc_list])
-    std_dev = (std_dev / (n - 1)) ** 0.5
-
-    # calculate error considering 95% confidence interval
-    error = 1.96 * std_dev / (n ** 0.5)
-
-    # output the test loss and the test acc
-    args[3].info('With %i run(s), Acc: %.2f +/- %.2f%%' % (n, test_acc * 100, error * 100))
 
 
 # let's evaluate the model
