@@ -45,7 +45,7 @@ def evaluate_test(model, opt, test_data, logger):
     logger.info('> Testing')
 
     config = {
-        'epsilon': 16.0,
+        'epsilon': 8.0,
         'num_steps': 20,
         'step_size': 2.0,
         'targeted': False,
@@ -65,9 +65,7 @@ def evaluate_test(model, opt, test_data, logger):
         if attack:
             # for all query data image, perform PGD to get the perturbation
             x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
-            
-            visualization(x_query, x_query_attack, 4)
-            break
+
             # and then feed into the encoder to get the mapping onto its feature space
             z_query_attack = model.encoder.forward(x_query_attack)
 

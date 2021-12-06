@@ -55,7 +55,7 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
 
     new_labels_query = new_labels_query.view(new_labels_query.size()[0]*new_labels_query.size()[1])
     x = data_query.detach()
-
+    #print(torch.max(x), torch.min(x))
     if config['random_init']:
         x = x + torch.zeros_like(x).uniform_(-config['epsilon'], config['epsilon'])
 
