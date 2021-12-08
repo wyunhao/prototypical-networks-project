@@ -198,8 +198,8 @@ def main():
         model = load_model(args.model, (3, 84, 84), 64, 64, weights_path)
     elif args.model == 'vanilla':
         model = load_model(args.model, (3, 84, 84), 64, 64)
-    num_gpus = 4
-    model.encoder = torch.nn.DataParallel(model.encoder, device_ids=[i for i in range(0, num_gpus)])
+    # num_gpus = 4
+    # model.encoder = torch.nn.DataParallel(model.encoder, device_ids=[i for i in range(0, num_gpus)])
     # create log directory
     new_os.mkdir_if_not_exist(opt['logging_dir'])
 

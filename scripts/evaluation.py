@@ -51,8 +51,9 @@ def evaluate_test(model, opt, test_data, logger):
         'targeted': False,
         'random_init': True
     }
-    attack = True
-    
+    attack_query = True
+    attack_support = True
+
     # do epoch_size classification tasks to test the model
     for _ in trange(test_data['epoch_size']):
         # get the episode_dict
@@ -61,21 +62,15 @@ def evaluate_test(model, opt, test_data, logger):
             test_data['num_shot'], test_data['num_query'])
 
         # classify images and get the loss and the acc of the curr episode
-        num_way, num_query, labels_query, _, z_proto, x_query = model.set_forward_loss(episode_dict)
-        
-        if attack:
-            # for all query data image, perform PGD to get the perturbation
-            x_query_attack = attack_pgd(model, config, x_query, z_proto, labels_query, num_way, num_query, test_data['num_shot'])
-
-            # and then feed into the encoder to get the mapping onto its feature space
-            z_query_attack = model.encoder.forward(x_query_attack)
-
-            # caculate the loss of this perturbation
-            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query_attack, z_proto)
-        else:
-            z_query = model.encoder.forward(x_query)
+        num_way, num_query, labels_query, z_query, z_proto = model.set_forward_loss(
+            episode_dict,
+            attack_query,
+            attack_support,
+            attack_pgd,
+            config,
+        )
             
-            _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query, z_proto)
+        _, output = calculate_loss_metric(num_way, num_query, labels_query, z_query, z_proto)
 
         # acumulate the loss and the acc
         test_loss += output['loss']
@@ -98,18 +93,6 @@ def evaluate_test(model, opt, test_data, logger):
     logger.info('Loss: %.4f / Acc: %.2f +/- %.2f%%' % (test_loss, test_acc_avg * 100, error * 100))
 
     return test_acc_avg
-
-
-def _generate_support_label(num_way, num_shot):
-    # create indices from 0 to num_way-1 for classification
-    target_inds = torch.arange(0, num_way).view(num_way, 1, 1)
-
-    # replicate all indices num_shot times (for each support image)
-    target_inds = target_inds.expand(num_way, num_shot, 1).long()
-
-    # convert indices from Tensor to Variable
-    target_inds = Variable(target_inds, requires_grad = False).to(dev)
-
 
 # function to run evaluation n times
 def evaluate_n_times(n, *args):

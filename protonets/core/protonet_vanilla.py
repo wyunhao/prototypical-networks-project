@@ -26,7 +26,7 @@ class ProtoNet(nn.Module):
         super(ProtoNet, self).__init__()
         self.encoder = encoder.to(dev)
 
-    def set_forward_loss(self, episode_dict):
+    def set_forward_loss(self, episode_dict, attack_query=False, attack_support=False, attack_pgd=None, config=None):
         # extract all images
         images = episode_dict['images'].to(dev)
 
@@ -54,24 +54,33 @@ class ProtoNet(nn.Module):
         x_support = x_support.contiguous().view(
             num_way * num_shot, *x_support.size()[2:]) # no more lines and columns
 
+        # encode all images and compute class prototypes
+        x_embedded = self.encoder.forward(x_support) # embeddings
+        query_dim = x_embedded.size(-1)
+        proto = x_embedded[:(num_way * num_shot)].view(num_way, num_shot, query_dim).mean(1)
+
         # transform x_query into a array in which all images are contiguous
         x_query = x_query.contiguous().view(
             num_way * num_query, *x_query.size()[2:]) # no more lines and columns
 
-        # join all images into a single contiguous array
-        x = torch.cat([x_support, x_query], 0)
+        # if attack the support, recalculate the proto based on the attacked support img for future querying
+        if attack_support:
+            support_label = torch.arange(0, num_way).view(num_way, 1, 1)
+            support_label = support_label.expand(num_way, num_shot, 1).long()
+            support_label = Variable(support_label, requires_grad = False).to(dev)
 
-        # encode all images
-        z = self.encoder.forward(x) # embeddings
+            support_attack = attack_pgd(self, config, x_support, proto, support_label, num_way, num_shot, num_shot)
+            support_embedded = self.encoder.forward(support_attack)
+            query_dim = support_embedded.size(-1)
+            proto = support_embedded[:(num_way * num_shot)].view(num_way, num_shot, query_dim).mean(1)
+        
+        if attack_query:
+            query_attack = attack_pgd(self, config, x_query, proto, target_inds, num_way, num_query, num_shot)
+            query_embedded = self.encoder.forward(query_attack)
+        else:
+            query_embedded = self.encoder.forward(x_query)
 
-        # compute class prototypes
-        z_dim = z.size(-1)
-        z_proto = z[:(num_way * num_shot)].view(num_way, num_shot, z_dim).mean(1)
-
-        # get the query embeddings
-        z_query = z[(num_way * num_shot):]
-
-        return num_way, num_query, target_inds, z_query, z_proto, x_query
+        return num_way, num_query, target_inds, query_embedded, proto
 
 
 # function to load the model structure
