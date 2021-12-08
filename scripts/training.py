@@ -131,7 +131,7 @@ def evaluate_valid(model, opt, valid_data, curr_epoch, logger):
 
         # classify images and get the loss and the acc of the curr episode
 
-        num_way, num_query, target_inds, z_query, z_proto, _ = model.set_forward_loss(
+        num_way, num_query, target_inds, z_query, z_proto = model.set_forward_loss(
             episode_dict,
         )
 
