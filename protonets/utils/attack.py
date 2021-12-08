@@ -1,10 +1,30 @@
 import torch
 import torch.nn.functional as F
 import random
+from protonets.utils.distance_measurement import euclidean_dist
 
 from torch.autograd import Variable
 
 dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+def calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto):
+    dists = euclidean_dist(z_query, z_proto)
+
+    # compute the log probabilities
+    log_p_y = F.log_softmax(-dists, dim = 1).view(num_way, num_query, -1)
+
+    # compute the loss
+    loss_val = -log_p_y.gather(2, target_inds).squeeze().view(-1).mean()
+
+    # get the predicted labels for each query
+    _, y_hat = log_p_y.max(2) # lines are classes and columns are query embeddings
+
+    # compute the accuracy
+    acc_val = torch.eq(y_hat, target_inds.squeeze()).float().mean()
+
+    # return output: loss, acc and predicted value
+    return loss_val, {'loss': loss_val.item(), 'acc': acc_val.item(), 'y_hat': y_hat}
+
 
 def _get_protonet_head(query, prototypes, n_way, n_query, n_shot):
     """
@@ -53,23 +73,18 @@ def attack_pgd(embedding_net, config, data_query, data_support_proto, labels_que
     else:
         new_labels_query = labels_query
 
-    new_labels_query = new_labels_query.view(new_labels_query.size()[0]*new_labels_query.size()[1])
     x = data_query.detach()
-    #print(torch.max(x), torch.min(x))
     if config['random_init']:
         x = x + torch.zeros_like(x).uniform_(-config['epsilon'], config['epsilon'])
+        x = torch.min(torch.max(x, data_query - config['epsilon']), data_query + config['epsilon'])
+        x = torch.clamp(x, 0.0, 255.0)
 
     for i in range(config['num_steps']):
 
         x.requires_grad_()
         with torch.enable_grad():
-            emb_query_adv = embedding_net.encoder(x.reshape([-1] + list(x.shape[-3:]))).reshape(5, n_query, -1)
-
-            logits = _get_protonet_head(emb_query_adv, data_support_proto, n_way, n_query, n_shot)
-            logits = logits.view(logits.size()[0]*logits.size()[1],logits.size()[2])
-
-            loss = F.cross_entropy(logits, new_labels_query, size_average=False)
-
+            emb_query_adv = embedding_net.encoder(x.reshape([-1] + list(x.shape[-3:]))).reshape(5*n_query, -1)
+            loss, _ = calculate_loss_metric(n_way, n_query, new_labels_query, emb_query_adv, data_support_proto)
 
         grad = torch.autograd.grad(loss, [x])[0]
 

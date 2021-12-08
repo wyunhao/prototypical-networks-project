@@ -52,6 +52,7 @@ def evaluate_test(model, opt, test_data, logger):
         'random_init': True
     }
     attack = True
+    
     # do epoch_size classification tasks to test the model
     for _ in trange(test_data['epoch_size']):
         # get the episode_dict

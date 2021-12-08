@@ -4,7 +4,6 @@ import torch
 def euclidean_dist(x, y):
     elements_in_x = x.size(0)
     elements_in_y = y.size(0)
-
     dimension_elements = x.size(1)
 
     assert dimension_elements == y.size(1)

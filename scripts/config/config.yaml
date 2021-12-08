@@ -28,7 +28,7 @@ omniglot:
 # mini_imagenet parameters
 mini_imagenet:
   train:
-    num_way: 20
+    num_way: 5
     num_shot: 5
     num_query: 15
     epoch_size: 100  
