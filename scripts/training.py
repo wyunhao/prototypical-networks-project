@@ -67,7 +67,13 @@ def train(model, opt, train_data, valid_data, logger):
             optimizer.zero_grad()
 
             # classify images and get the loss and the acc of the curr episode
-            num_way, num_query, target_inds, z_query, z_proto = model.set_forward_loss(episode_dict)
+            num_way, num_query, target_inds, z_query, z_proto = model.model.set_forward_loss(
+                episode_dict,
+                attack_query=True, 
+                attack_support=False, 
+                attack_pgd=attack_pgd, 
+                config=config
+            )
             loss, output = calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto)
 
             # acumulate the loss and the acc
@@ -127,10 +133,6 @@ def evaluate_valid(model, opt, valid_data, curr_epoch, logger):
 
         num_way, num_query, target_inds, z_query, z_proto, _ = model.set_forward_loss(
             episode_dict,
-            attack_query=True, 
-            attack_support=False, 
-            attack_pgd=attack_pgd, 
-            config=config
         )
 
         _, output = calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto)
