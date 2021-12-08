@@ -20,6 +20,17 @@ from protonets.utils.arguments_parser import parse_arguments
 from protonets.utils.logging import get_logger
 from protonets.utils.time_measurement import measure_time
 
+from protonets.utils.attack import attack_pgd
+
+
+config = {
+    'epsilon': 8.0,
+    'num_steps': 20,
+    'step_size': 2.0,
+    'targeted': False,
+    'random_init': True
+}
+
 # function to train the model on the train set through many epochs
 def train(model, opt, train_data, valid_data, logger):
     # set Adam optimizer with an initial learning rate
@@ -114,7 +125,14 @@ def evaluate_valid(model, opt, valid_data, curr_epoch, logger):
 
         # classify images and get the loss and the acc of the curr episode
 
-        num_way, num_query, target_inds, z_query, z_proto, _ = model.set_forward_loss(episode_dict)
+        num_way, num_query, target_inds, z_query, z_proto, _ = model.set_forward_loss(
+            episode_dict,
+            attack_query=True, 
+            attack_support=False, 
+            attack_pgd=attack_pgd, 
+            config=config
+        )
+
         _, output = calculate_loss_metric(num_way, num_query, target_inds, z_query, z_proto)
 
         # acumulate the loss and the acc
