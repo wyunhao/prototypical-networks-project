@@ -70,7 +70,7 @@ def train(model, opt, train_data, valid_data, logger):
             num_way, num_query, target_inds, z_query, z_proto = model.set_forward_loss(
                 episode_dict,
                 attack_query=True, 
-                attack_support=False, 
+                attack_support=True, 
                 attack_pgd=attack_pgd, 
                 config=config
             )

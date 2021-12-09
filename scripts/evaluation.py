@@ -48,11 +48,11 @@ def evaluate_test(model, opt, test_data, logger):
         'epsilon': 8.0,
         'num_steps': 20,
         'step_size': 2.0,
-        'targeted': False,
+        'targeted': True,
         'random_init': True
     }
     attack_query = True
-    attack_support = True
+    attack_support = False
 
     # do epoch_size classification tasks to test the model
     for _ in trange(test_data['epoch_size']):
@@ -155,8 +155,8 @@ def main():
         model = load_model(model_name, (3, 84, 84), 64, 64, weights_path)
     elif model_name == 'vanilla':
         model = load_model(model_name, (3, 84, 84), 64, 64)
-    num_gpus = 4
-    model.encoder = torch.nn.DataParallel(model.encoder, device_ids=[i for i in range(0, num_gpus)])
+    # num_gpus = 4
+    # model.encoder = torch.nn.DataParallel(model.encoder, device_ids=[i for i in range(0, num_gpus)])
     # create test_data dict
     test_data = config[dataset]['test']
 
