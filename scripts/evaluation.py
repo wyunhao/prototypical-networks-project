@@ -1,5 +1,5 @@
 from os import path
-from protonets.utils.attack import attack_pgd
+from protonets.utils.attack import attack_pgd, attack_pgd_targeted
 from protonets.utils.metric import calculate_loss_metric
 from tqdm import trange
 from math import fsum
@@ -66,7 +66,7 @@ def evaluate_test(model, opt, test_data, logger):
             episode_dict,
             attack_query,
             attack_support,
-            attack_pgd,
+            attack_pgd_targeted,
             config,
         )
             
