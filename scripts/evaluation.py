@@ -51,8 +51,8 @@ def evaluate_test(model, opt, test_data, logger):
         'targeted': True,
         'random_init': True
     }
-    attack_query = True
-    attack_support = False
+    attack_query = False
+    attack_support = True
 
     # do epoch_size classification tasks to test the model
     for _ in trange(test_data['epoch_size']):
