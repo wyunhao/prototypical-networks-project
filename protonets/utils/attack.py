@@ -19,8 +19,6 @@ def attack_pgd(embedding_net, config, attacked_on_data, data_support_proto, orig
     else:
         new_labels = original_labels
 
-    print("       check new label: ", new_labels)
-
     x = attacked_on_data.detach()
     if config['random_init']:
         x = x + torch.zeros_like(x).uniform_(-config['epsilon'], config['epsilon'])
