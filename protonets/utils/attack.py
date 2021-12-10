@@ -10,9 +10,9 @@ def attack_pgd(embedding_net, config, attacked_on_data, data_support_proto, orig
         new_labels = torch.zeros_like(original_labels)
         for i in range(int(original_labels.size()[0])):
             for j in range(int(original_labels.size()[1])):
-                if j == 0: # make all support label targeting the same class
+                if j != 0: # make all support label targeting the same class
                     new_labels[i,j] = new_labels[i,0]
-                while True and j != 0:
+                while True and j == 0:
                     new_labels[i,j] = random.randint(0,n_way-1)
                     if new_labels[i,j] != original_labels[i,j]:
                         break
