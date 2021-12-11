@@ -4,7 +4,7 @@ from torch.autograd import Variable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from ..utils.attack import support_set_attack
 
 # ignore pytorch boring warnings
 filterwarnings("ignore", category=UserWarning)
@@ -69,6 +69,7 @@ class ProtoNet(nn.Module):
             support_label = support_label.expand(num_way, num_shot, 1).long()
             support_label = Variable(support_label, requires_grad = False).to(dev)
 
+            #support_attack = support_set_attack(self, config, x_support, proto, support_label, num_way, num_shot, num_shot)
             support_attack = attack_pgd(self, config, x_support, proto, support_label, num_way, num_shot, num_shot)
             support_embedded = self.encoder.forward(support_attack)
             query_dim = support_embedded.size(-1)

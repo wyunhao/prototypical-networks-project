@@ -96,3 +96,37 @@ def _calculate_similar_proto_pair(proto_vector):
 
 def _calculate_eculian_dist(v1, v2):
     return torch.cdist(v1, v2, p=2)
+
+def support_set_attack(embedding_net, config, data_query, data_support_proto, labels_query, n_way, n_query, n_shot):
+    new_labels_query = labels_query
+
+    x = data_query.detach()
+    emb_query = embedding_net.encoder(x.reshape([-1] + list(x.shape[-3:]))).reshape(5*n_query, -1)
+    
+    if config['random_init']:
+        x = x + torch.zeros_like(x).uniform_(-config['epsilon'], config['epsilon'])
+        x = torch.min(torch.max(x, data_query - config['epsilon']), data_query + config['epsilon'])
+        x = torch.clamp(x, 0.0, 255.0)
+
+    
+    for i in range(config['num_steps']):
+
+        x.requires_grad_()
+        with torch.enable_grad():
+            x_embedded = embedding_net.encoder(x)
+            query_dim = x_embedded.size(-1)
+            data_support_proto_adv = x_embedded[:(n_way * n_shot)].view(n_way, n_shot, query_dim).mean(1)
+            #emb_query_adv = embedding_net.encoder(x.reshape([-1] + list(x.shape[-3:]))).reshape(5*n_query, -1)
+            loss, _ = calculate_loss_metric(n_way, n_query, new_labels_query, emb_query, data_support_proto_adv)
+
+        grad = torch.autograd.grad(loss, [x])[0]
+
+        if config['targeted']:
+            x = x.detach() - config['step_size']*torch.sign(grad.detach())
+        else:
+            x = x.detach() + config['step_size']*torch.sign(grad.detach())
+
+        x = torch.min(torch.max(x, data_query - config['epsilon']), data_query + config['epsilon'])
+        x = torch.clamp(x, 0.0, 255.0)
+    
+    return x
